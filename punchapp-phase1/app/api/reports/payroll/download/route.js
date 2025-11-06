@@ -1,0 +1,20 @@
+
+import { NextResponse } from 'next/server'
+import { supaAdmin, dateRangeFor, fetchFinalPaidMinutes, toCSV, toXLSX } from '@/lib/reports'
+export async function POST(req){
+  const body = await req.json().catch(()=>null)
+  if (!body) return NextResponse.json({ error: 'Bad JSON' }, { status: 400 })
+  const kind = body.kind || 'monthly'
+  const type = body.type || 'csv'
+  const { startStr, endStr } = dateRangeFor(kind)
+  const sb = supaAdmin()
+  const rows = await fetchFinalPaidMinutes(sb, startStr, endStr)
+  if (type==='xlsx'){
+    const { buf, fname } = toXLSX(rows, { kind, startStr, endStr })
+    return new NextResponse(buf, { headers: { 'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'content-disposition': `attachment; filename="${fname}"` } })
+  } else {
+    const csv = toCSV(rows)
+    const name = `${kind}_${startStr}_${endStr}.csv`
+    return new NextResponse(csv, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${name}"` } })
+  }
+}
