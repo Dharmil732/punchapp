@@ -1,12 +1,18 @@
 import { redirect } from "next/navigation";
-import { getServerSupabase } from "@/lib/authServer";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/auth-helpers-nextjs";
+
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const supabase = getServerSupabase();
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: (k) => cookieStore.get(k)?.value } }
+  );
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) redirect("/signin");
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single();
-  const allowed = ["employee", "supervisor", "manager", "admin"];
-  if (!profile || !allowed.includes(profile.role)) redirect("/");
-  return (<div className="bg-card p-4"><h1 className="text-lg font-semibold mb-2">Shift Requests</h1><p>Work in progress</p></div>);
+  if (!session) redirect("/sign-in");
+  // any signed-in ok
+  return <main className="p-6"><h1 className='text-lg font-semibold mb-4'>Shift Requests</h1></main>;
 }

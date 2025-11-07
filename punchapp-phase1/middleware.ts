@@ -6,6 +6,7 @@ const PROTECTED = ["/","/home","/tasks","/shifts","/requests","/reports","/admin
 
 export async function middleware(req: NextRequest) {
   const url = req.nextUrl.clone();
+
   if (!PROTECTED.some(p => url.pathname === p || url.pathname.startsWith(p + "/"))) {
     return NextResponse.next();
   }
@@ -16,16 +17,16 @@ export async function middleware(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (key) => req.cookies.get(key)?.value,
-        set: (key, value, options) => res.cookies.set(key, value, options),
-        remove: (key, options) => res.cookies.set(key, "", { ...options, maxAge: 0 }),
+        get: (k) => req.cookies.get(k)?.value,
+        set: (k, v, o) => res.cookies.set(k, v, o),
+        remove: (k, o) => res.cookies.set(k, "", { ...o, maxAge: 0 }),
       },
     }
   );
-  const { data: { session } } = await supabase.auth.getSession();
 
+  const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
-    url.pathname = "/signin";
+    url.pathname = "/sign-in";
     url.search = `?returnTo=${encodeURIComponent(req.nextUrl.pathname + req.nextUrl.search)}`;
     return NextResponse.redirect(url);
   }
